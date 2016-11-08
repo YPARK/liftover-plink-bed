@@ -15,6 +15,7 @@ import sys
 
 mapfile = sys.argv[1]
 bedfile = sys.argv[2]
+exclude_out = sys.argv[3]
 
 snp_pos = {}
 with open(bedfile) as f:
@@ -25,6 +26,7 @@ with open(bedfile) as f:
 with open(mapfile) as f:
     map_lines = f.readlines()
 
+exclude_list = []
 with open(mapfile, 'w') as f:
     for line in map_lines:
         xs = line.strip().split()
@@ -35,7 +37,11 @@ with open(mapfile, 'w') as f:
         else:
             # unable to liftover SNP, mark with -1
             xs[3] = -1
+            exclude_list.append(name)
         f.write('\t'.join(xs) + '\n')
 
+with open(exclude_out, 'w') as f:
+    for x in exclude_list:
+        f.write(x + '\n')
 
         
