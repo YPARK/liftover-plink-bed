@@ -1,4 +1,15 @@
 #!/bin/bash
+#
+# change_plink_reference_genome.bash
+#########################
+# 
+# Script that changes reference genome coordinates for binary PLINK files.
+#
+# By default, from hg18 to hg19. Update the CHAIN variable to change this.
+#
+# This script also:
+# - excludes SNPs with no new reference position.
+# - excludes SNPs not present in all samples
 
 set -u
 set -e
