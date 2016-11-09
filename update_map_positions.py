@@ -36,7 +36,7 @@ with open(mapfile, 'w') as f:
            xs[3] = snp_pos[name]
         else:
             # unable to liftover SNP, mark with -1
-            xs[3] = -1
+            xs[3] = '-1'
             exclude_list.append(name)
         f.write('\t'.join(xs) + '\n')
 

@@ -43,9 +43,11 @@ def rename_entry(x, d):
     return y
 
 if __name__ == '__main__':
-    if sys.argv != 4:
+    if len(sys.argv) != 4:
         print('Program has 3 required arguments.')
         print('python filter_rename_samples.py rename_list.csv file.fam <output_prefix>')
+        print()
+        print('You supplied %d: %s' % (len(sys.argv[1:]),  ' '.join(sys.argv[1:])))
 
     name_map = immunochip_to_patient_name(sys.argv[1])
     out_fam = sys.argv[3] + '.fam'
@@ -54,14 +56,12 @@ if __name__ == '__main__':
     with open(sys.argv[2]) as f:
         lines = f.readlines()
 
-    print('Writing', out_fam)
     with open(out_fam, 'w') as f:
         for xs in parse_fam_file(lines):
             xs = rename_entry(xs, name_map)
             f.write(' '.join(xs))
             f.write('\n')
 
-    print('Writing', out_samples)
     with open(out_samples, 'w') as f:
         for sample in name_map.values():
             f.write(sample)

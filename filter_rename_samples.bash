@@ -11,7 +11,6 @@
 # Only samples in keep_list.csv will be kept.
 set -e
 set -u
-set -x
 
 KEEP_CSV=$1
 SRC_DIR=$2
@@ -27,6 +26,6 @@ python filter_rename_samples.py "$KEEP_CSV" "$SRC_FAM" "${TMP_FAM%.fam}"
 mkdir -p "$DST_DIR"
 for fam in "$SRC_DIR"/*.fam ; do
 	name=$(basename "$fam" .fam)
-	plink --bfile "$SRC_DIR/$name" --fam "$TMP_FAM" --keep "$TMP_KEEP" --out "$DST_DIR/$name" --make-bed
+	plink --bfile "$SRC_DIR/$name" --fam "$TMP_FAM" --keep "$TMP_KEEP" --out "$DST_DIR/$name" --make-bed > /dev/null 2>&1
 done
 rm -fr $TMP
