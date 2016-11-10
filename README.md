@@ -1,5 +1,6 @@
 # process-plink-bed
 Pipeline that:
+
 	1. Filters subset of genotype samples
 	2. Renames said subset
 	3. Converts genome coordinates to wanted reference genome
@@ -7,6 +8,12 @@ Pipeline that:
 
 I is quite specific to a particular use case, but it is trivial to generalize the 
 functionality if this is ever needed.
+
+## Example run
+```bash
+$ bash process_plink_bed.bash keep_list.csv plink_hg18 plink_hg19
+```
+
 
 # Sub tools
 
