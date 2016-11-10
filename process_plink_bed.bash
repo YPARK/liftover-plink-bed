@@ -32,8 +32,10 @@ for bed in "$DST_DIR"/*.bed ; do
 	chr=$(basename "$prefix")
 	shapeit --input-bed "$prefix" \
 		--input-map genetic_map_b37/genetic_map_${chr}_combined_b37.txt \
-		--output-max "${prefix}.phased.haps" "${prefix}.phased.sample"
+		--output-max "${prefix}.phased.haps" "${prefix}.phased.sample" \
+		--output-log "${prefix}.phased.log"
 	shapeit -convert \
 		--input-haps "${prefix}.phased" \
-        	--output-vcf "${prefix}.phased.vcf"
+        	--output-vcf "${prefix}.phased.vcf" \
+		--output-log "${prefix}.phased.vcf.log"
 done
