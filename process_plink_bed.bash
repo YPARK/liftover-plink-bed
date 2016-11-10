@@ -13,6 +13,7 @@ set -e
 KEEP_CSV=$1
 SRC_DIR=$2
 DST_DIR=$3
+
 TMP=$(mktemp -q -d --tmpdir=.)
 
 echo "Renaming and filtering ..."
@@ -28,14 +29,7 @@ rm -fr "$TMP"
 
 echo "Phasing and creating .vcf file"
 for bed in "$DST_DIR"/*.bed ; do
-	prefix="${bed%.bed}"
-	chr=$(basename "$prefix")
-	shapeit --input-bed "$prefix" \
-		--input-map genetic_map_b37/genetic_map_${chr}_combined_b37.txt \
-		--output-max "${prefix}.phased.haps" "${prefix}.phased.sample" \
-		--output-log "${prefix}.phased.log"
-	shapeit -convert \
-		--input-haps "${prefix}.phased" \
-        	--output-vcf "${prefix}.phased.vcf" \
-		--output-log "${prefix}.phased.vcf.log"
+	export prefix="${bed%.bed}"
+	echo "Phasing $prefix ..."
+	sbatch phase.bash
 done
