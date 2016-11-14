@@ -22,6 +22,8 @@ function require() {
 require plink
 require liftOver liftOverUcsc
 require GenotypeHarmonizer.sh GenotypeHarmonizer
+require shapeit
+require tabix
 
 KEEP_CSV=$1
 SRC_DIR=$2
@@ -48,13 +50,22 @@ else
 fi
 
 if [[ ! -d "$TMP/30_aligned" || "$RECOMPUTE" = true ]] ; then
-	./raul_startAlign.bash "$TMP/20_liftover" "$TMP/30_aligned"
+	./raul_startAlign.sh "$TMP/20_liftover" "$TMP/30_aligned"
 fi
+
+echo "Slurm jobs aligning SNPs to reference needs to finish before continuing."
+echo "Check that they are done in another shell (sorry!)"
+read -n1 -r -p "Press any key to continue..." key
+
+
 echo "Phasing and creating .vcf file"
+
 for bed in "$TMP/30_aligned"/*.bim; do
 	export prefix="${bed%.bim}"
-	echo "Phasing $prefix ..."
-	sbatch phase.bash
+	export dst="$DST_DIR/$(basename $prefix).phased.vcf"
+	if [[ ! -f "$dst" || "$RECOMPUTE" = true ]] ; then
+		echo "Phasing $prefix ..."
+		sbatch phase.bash
+	fi
 done
-
 

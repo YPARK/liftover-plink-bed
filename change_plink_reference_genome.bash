@@ -41,9 +41,6 @@ for fam in "$SRC_DIR"/chr*.fam ; do
 	awk '{print $4, $2}' OFS='\t' "$HG19_BED" > "$UPLIST"
 	plink --file $TMPNAME --make-bed --update-map "$UPLIST" --exclude "$HG19_UNMAPPED" \
 		--out $DST 
-	# From GenotypeHarmonizer tutorial.. not sure about why or if this is needed
-	#No we have to again create a plink file to make sure the implied order is correct after liftover.
-	plink --file "$DST" --out "$DST" --make-bed
 done
 
 
