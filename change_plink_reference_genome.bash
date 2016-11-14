@@ -9,42 +9,42 @@
 #
 # This script also:
 # - excludes SNPs with no new reference position.
-# - excludes SNPs not present in all samples
-
+set -u
+set -e
 
 CHAIN=hg18ToHg19.over.chain.gz
 command -v liftOver >/dev/null 2>&1 || { echo >&2 "liftOver not present. do module load ...."; exit 1; }
 command -v plink >/dev/null 2>&1 || { echo >&2 "plink not present. do module load ...."; exit 1; }
 test -f $CHAIN || wget http://hgdownload.cse.ucsc.edu/goldenPath/hg18/liftOver/$CHAIN
-
-TMP=$(mktemp -q -d --tmpdir=.)
 SRC_DIR="$1"
 DST_DIR="$2"
-if [ ! -d "$DST_DIR" ] ; then
-	mkdir -p "$DST_DIR"
-fi
-for fam in "$SRC_DIR"/*.fam ; do
+mkdir -p "$DST_DIR"
+
+for fam in "$SRC_DIR"/chr*.fam ; do
 	NAME=$(basename "$fam" .fam)
 	SRC="${fam%.fam}"
 	DST="$DST_DIR/$NAME"
-	TMPNAME=$TMP/$NAME
+	TMPNAME=$DST_DIR/$NAME
 	HG18_BED="${TMPNAME}_hg18.bed"
 	HG19_BED="${TMPNAME}_hg19.bed"
+	HG19_UNMAPPED="${TMPNAME}_hg19_unmapped.bed"
+	UPLIST="${TMPNAME}_update_list.txt"
 
 	# convert from binary to textual plink formats and remove
 	# SNPs to present in all samples.
-	plink --bfile "$SRC" --geno 0 --recode --out "$TMPNAME" > /dev/null
+	plink --bfile "$SRC" --recode --out "$TMPNAME" > /dev/null
 	# SNP name should be enough to track back rest of ID
-	awk '{ print "chr" $1 "\t" $4 "\t" $4 + 1 "\t" $2 "\t" $3}' \
+	awk '{ print "chr" $1, $4, $4 + 1, $2, $3}' OFS='\t' \
 		"${TMPNAME}.map" > "$HG18_BED"
-	liftOver "$HG18_BED" "$CHAIN" "$HG19_BED" /dev/null > /dev/null 2>&1
-
-	python update_map_positions.py \
-		"${TMPNAME}.map" "$HG19_BED" "${TMPNAME}.exclude"
-	plink --file $TMPNAME --make-bed --exclude "${TMPNAME}.exclude" \
+	liftOver "$HG18_BED" "$CHAIN" "$HG19_BED" "$HG19_UNMAPPED"
+	#Create mapping update list used by Plink
+	awk '{print $4, $2}' OFS='\t' "$HG19_BED" > "$UPLIST"
+	plink --file $TMPNAME --make-bed --update-map "$UPLIST" --exclude "$HG19_UNMAPPED" \
 		--out $DST 
+	# From GenotypeHarmonizer tutorial.. not sure about why or if this is needed
+	#No we have to again create a plink file to make sure the implied order is correct after liftover.
+	plink --file "$DST" --out "$DST" --make-bed
 done
 
-rm -fr "$TMP"
 
 

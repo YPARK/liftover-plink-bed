@@ -10,26 +10,51 @@
 set -u
 set -e
 
+function require() {
+	bin="$1"
+	mod="${2-$bin}"
+	command -v "$bin" >/dev/null 2>&1 || module load "$mod"
+	if ! command -v "$bin" > /dev/null 2>&1 ; then
+		echo > /dev/stderr "Unable to loacate $bin. aborting ..."
+		exit 1
+	fi
+}
+require plink
+require liftOver liftOverUcsc
+require GenotypeHarmonizer.sh GenotypeHarmonizer
+
 KEEP_CSV=$1
 SRC_DIR=$2
 DST_DIR=$3
+TMP=tmp
 
-TMP=$(mktemp -q -d --tmpdir=.)
+RECOMPUTE=false
 
-echo "Renaming and filtering ..."
-bash filter_rename_samples.bash "$KEEP_CSV" "$SRC_DIR" "$TMP"
-# input files sometimes has format chr_N .. , change to chrN
-if compgen -G "$TMP/chr_*" ; then
-	rename chr_ chr "$TMP"/chr_*
+if [[ ! -d "$TMP/10_filter" || "$RECOMPUTE" = true ]] ; then
+	echo "Renaming and filtering ..."
+	./filter_rename_samples.bash "$KEEP_CSV" "$SRC_DIR" "$TMP/10_filter"
+	# input files sometimes has format chr_N .. , change to chrN
+	if compgen -G "$TMP/10_filter/chr_*" > /dev/null ; then
+		rename chr_ chr "$TMP/10_filter/"chr_*
+	fi
+else
+	echo "Skipping renaming and filtering."
+fi
+if [[ ! -d "$TMP/20_liftover" || "$RECOMPUTE" = true ]] ; then
+	echo "Changing reference genome ..."
+	./change_plink_reference_genome.bash "$TMP/10_filter" "$TMP/20_liftover"
+else
+	echo "Skipping change reference genome ..."
 fi
 
-echo "Changing reference genome ..."
-bash change_plink_reference_genome.bash "$TMP" "$DST_DIR"
-rm -fr "$TMP"
-
+if [[ ! -d "$TMP/30_aligned" || "$RECOMPUTE" = true ]] ; then
+	./raul_startAlign.bash "$TMP/20_liftover" "$TMP/30_aligned"
+fi
 echo "Phasing and creating .vcf file"
-for bed in "$DST_DIR"/*.bed ; do
-	export prefix="${bed%.bed}"
+for bed in "$TMP/30_aligned"/*.bim; do
+	export prefix="${bed%.bim}"
 	echo "Phasing $prefix ..."
 	sbatch phase.bash
 done
+
+
