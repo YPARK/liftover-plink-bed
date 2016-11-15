@@ -1,0 +1,6 @@
+phase/output
+phase/logs
+phase/input/plink_hg18
+phase/input/hg18ToHg19.over.chain.gz
+phase/input/genetic_map_b37
+phase/input/1000GP_Phase3
