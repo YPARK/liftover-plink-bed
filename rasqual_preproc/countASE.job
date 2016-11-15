@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=2
+#SBATCH --time=01:59:59
+#SBATCH --mem=4gb
+
+
+set -u
+set -e
+
+#module load GATK 
+
+echo java \
+   -XX:ParallelGCThreads=1  -Xmx4g \
+   -jar ${EBROOTGATK-dummy}/GenomeAnalysisTK.jar \
+   -R $genome_ref \
+   -T ASEReadCounter \
+   -o $output_csv \
+   -I $input_bam \
+   -sites $input_vcf \
+   -U ALLOW_N_CIGAR_READS \
+   -dt NONE \
+   --minMappingQuality 10 
+
