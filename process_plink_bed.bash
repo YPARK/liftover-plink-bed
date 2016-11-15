@@ -59,8 +59,24 @@ read -n1 -r -p "Press any key to continue..." key
 
 
 echo "Phasing and creating .vcf file"
+set -x
+if [[ ! -d "$TMP/40_filtered" || "$RECOMPUTE" = true ]] ; then
+	mkdir -p "$TMP/40_filtered"
+	for bim in "$TMP/30_aligned/"*.bim ; do
+		src_prefix=${bim%.bim}
+		name=$(basename "$src_prefix")
+		dst_prefix="$TMP/40_filtered/$name"
+		plink --bfile "$src_prefix" --make-bed \
+			--out "$dst_prefix" \
+			--geno 0.01 \
+			--maf 0.01 \
+			--hwe 1e-7
 
-for bed in "$TMP/30_aligned"/*.bim; do
+	done
+fi
+
+
+for bed in "$TMP/40_filtered"/*.bim; do
 	export prefix="${bed%.bim}"
 	export dst="$DST_DIR/$(basename $prefix).phased.vcf"
 	if [[ ! -f "$dst" || "$RECOMPUTE" = true ]] ; then
