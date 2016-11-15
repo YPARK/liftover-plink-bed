@@ -23,4 +23,4 @@ mkdir -p "$dst_dir"
 # bgzip is part of tabix
 #bgzip -c "${prefix}.phased.vcf" > "$dst/${name}.phased.vcf.bgz" 
 #tabix -p vcf "$dst/${name}.phased.vcf.bgz"
-cp "${prefix}.phased.vcf" "$dst/${name}.phased.vcf" 
+cp "${prefix}.phased.vcf" "$dst" 
