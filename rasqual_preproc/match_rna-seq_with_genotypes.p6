@@ -48,18 +48,19 @@ sub genotype-ids($path) {
     $path.IO.lines;
 }
 
-multi MAIN($keep_path, $bam_dir) {
-    my @genotype-ids = genotype-ids $keep_path;
-    my @files = read-filenames $bam_dir;
-    my %names = id_to_bamfile(@files, stimulation-time => 0);
+multi MAIN($genotype-path, $bam-dir) {
+    my @genotype-ids = genotype-ids $genotype-path;
+    my @files = read-filenames $bam-dir;
+    my %paths = id_to_bamfile(@files, stimulation-time => 0);
 
-    my @common-ids = (@genotype-ids (&) %names.keys).keys;
+    my @common-ids = (@genotype-ids (&) %paths.keys).keys;
 
-    say "We have rna-seq data for {%names.elems} people.";
+    say "We have rna-seq data for {%paths.elems} people.";
     say "We have genotype data for {@genotype-ids.elems} people.";
     say "Of those, {@common-ids.elems} overlap.";
 
     for @common-ids -> $name {
-	say "$name:\t{%names{$name}}";
+	my $path = %paths{$name}.IO.abspath;
+	say "$name:\t$path";
     }
 }
