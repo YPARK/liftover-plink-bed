@@ -27,25 +27,33 @@ sub MAIN($outdir, $min-after-stim = 0) {
     for @sample-names -> $sample {
       my $bam-file = 
       my $outpath= "$outdir/{$chr}_{$sample}.csv";
-      for %(genome_ref => $conf<genome-ref>,
-	output_csv => $outpath,
-	input_bam => %sample-bam{$sample},
-	input_vcf => $vcf-path,
-      ).kv -> $k, $v {
+      my %env-vars = genome_ref => $conf<genome-ref>,
+		    output_csv => $outpath,
+		    input_bam => %sample-bam{$sample},
+		    input_vcf => $vcf-path;
+      for %env-vars.kv -> $k, $v {
 	%*ENV{$k} = $v;
       }
       file-must-exist %*ENV<input_bam>;
       file-must-exist %*ENV<input_vcf>;
       file-must-exist %*ENV<genome_ref>;
-      shell qq:to/END/;
+      my $shell-cmd = qq:to/END/;
 	sbatch \\
 	  -J "ASE_{$chr}_{$sample}" \\
 	  -o "{$outpath}.out" \\
 	  -e "{$outpath}.err" \\
 	  countASE.job 
       END
+      gen-recompute-script("{$outpath}.rerun.bash", $shell-cmd, %env-vars);
+
+      shell $shell_cmd;
     }
   }
+}
+
+sub gen-recompute-script($outp, $shell-cmd, %env-vars) {
+  my @xs = %env-vars.kv.map($k, $v -> { "export {$k}={$v}" });
+  spurt $outp, @xs.push($shell-cmd).join("\n");
 }
 
 sub file-must-exist(Str $path) {
