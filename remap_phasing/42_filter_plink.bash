@@ -6,8 +6,9 @@ set -e
 module load plink
 
 SRC_DIR=41_subset
-DST_DIR=42_test3_plink
+DST_DIR="42_plink"
 RECOMPUTE=true
+echo "Writing to $DST_DIR"
 
 if [[ ! -d "$DST_DIR" || "$RECOMPUTE" = true ]] ; then
   mkdir -p "$DST_DIR"
@@ -19,7 +20,10 @@ if [[ ! -d "$DST_DIR" || "$RECOMPUTE" = true ]] ; then
     plink --bfile "$src_prefix" --make-bed \
       --out "$dst_prefix" \
       --geno 0.01 \
+      --maf 0.1 \
       --hwe 1e-7 | tee "${dst_prefix}.log"
+
+    plink --bfile "$dst_prefix" --freq counts --out "$dst_prefix"
   done
 fi
 
