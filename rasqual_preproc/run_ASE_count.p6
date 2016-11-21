@@ -8,10 +8,14 @@
 # 	
 # 
 
-sub MAIN($outdir, $min-after-stim = 0) {
+sub MAIN($outdir, $min-after-stim = 0, $java-tmp-dir='tmp/java') {
   my $conf = read-config('config.ini');
   #die("output directory '$outdir' already exists..") if $outdir.IO.d;
   mkdir $outdir;
+
+  if not $java-tmp-dir.IO.d {
+    mkdir $java-tmp-dir;
+  }
 
   my @vcf-files = locate-vcf-files $conf<vcf-dir>;
   # all VCF files must have the same set of samples.
@@ -28,7 +32,8 @@ sub MAIN($outdir, $min-after-stim = 0) {
       my %env-vars = genome_ref => $conf<genome-ref>,
 		    output_csv => $outpath,
 		    input_bam => %sample-bam{$sample},
-		    input_vcf => $vcf-path;
+		    input_vcf => $vcf-path,
+		    java_tmp => $java-tmp-dir;
       for %env-vars.kv -> $k, $v {
 	%*ENV{$k} = $v;
       }
@@ -40,17 +45,15 @@ sub MAIN($outdir, $min-after-stim = 0) {
 	  -J "ASE_{$chr}_{$sample}" \\
 	  -o "{$outpath}.out" \\
 	  -e "{$outpath}.err" \\
-	  countASE.job 
+	    {"countASE.job".IO.abspath}
       END
       gen-recompute-script("{$outpath}.rerun.bash", $shell-cmd, %env-vars);
-
-      shell $shell_cmd;
     }
   }
 }
 
 sub gen-recompute-script($outp, $shell-cmd, %env-vars) {
-  my @xs = %env-vars.kv.map($k, $v -> { "export {$k}={$v}" });
+  my @xs = %env-vars.keys.map({ "export {$_}={%env-vars{$_}}" });
   spurt $outp, @xs.push($shell-cmd).join("\n");
 }
 
@@ -69,10 +72,11 @@ sub locate-vcf-files($vcf-dir) {
 }
 
 sub extract-chr($filename) {
-  ~$0 if $filename ~~ /chr(\d+)/ or die("Unable to extract chrom name from $filename");
+  ~$0 if $filename ~~ /chr_(\d+)/ or die("Unable to extract chrom name from $filename");
 }
 
 sub read-vcf-samples($vcf-path) {
+  # vcftools must be installed (module load VCFtools)
   # Order of sample names must be consistent throughout the analysis
   my @res = qq:x/ vcf-query -l {$vcf-path} /.lines or die('Problems running vcf-query.');
   return @res;
