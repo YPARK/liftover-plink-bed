@@ -4,7 +4,6 @@
 #SBATCH --time=03:59:59
 #SBATCH --mem=6gb
 
-
 set -u
 set -e
 
@@ -12,13 +11,14 @@ module load GATK
 
 srun java \
    -XX:ParallelGCThreads=1  -Xmx4g \
-   -Djava.io.tmpdir=/path/to/my/tmp/folder \
+   -Djava.io.tmpdir="$tmp_ase" \
    -jar ${EBROOTGATK-dummy}/GenomeAnalysisTK.jar \
    -R "$genome_ref" \
    -T ASEReadCounter \
    -o "$output_csv" \
    -I "$input_bam" \
    -sites "$input_vcf" \
+   -L "$input_vcf" \
    -U ALLOW_N_CIGAR_READS \
    -dt NONE \
    --minMappingQuality 10

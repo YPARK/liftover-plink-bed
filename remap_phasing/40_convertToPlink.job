@@ -1,0 +1,34 @@
+#!/bin/bash
+#SBATCH --job-name=GEN2Plink
+#SBATCH --nodes=1
+#SBATCH --time=3:59:59
+#SBATCH --mem=8gb
+set -u
+set -e
+
+module load GenotypeHarmonizer
+
+if [[ "$3" == "XY" ]] ; then
+
+  GenotypeHarmonizer.sh \
+    --input $1 \
+    --inputType GEN \
+    --output $2 \
+    --outputType PLINK_BED \
+    --update-id --variants 500 --mafAlign 0.05 \
+    --inputProb 0.7 \
+    --forceChr ${3}
+
+else
+GenotypeHarmonizer.sh \
+    --input $1 \
+    --inputType GEN \
+    --output $2 \
+    --outputType PLINK_BED \
+    -r "$ref_chrom" \
+    --refType VCF \
+    --update-id --variants 500 --mafAlign 0.05 \
+    --inputProb 0.7 \
+    --forceChr ${3}
+
+fi

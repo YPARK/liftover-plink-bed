@@ -1,0 +1,3 @@
+https://mathgen.stats.ox.ac.uk/impute/1000GP_Phase3.tgz
+/groups/umcg-wijmenga/tmp04/umcg-raguirre/glutenTcells/3_opticallQc/plink
+/groups/umcg-wijmenga/tmp04/umcg-raguirre/glutenTcells/FinalReports/zuzanna_FinalReport_19112015_allcolumns.txt

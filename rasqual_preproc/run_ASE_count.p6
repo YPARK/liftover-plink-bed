@@ -1,5 +1,4 @@
 #!/usr/bin/env perl6
-use Config::Simple;
 
 # TODO:
 #
@@ -25,7 +24,6 @@ sub MAIN($outdir, $min-after-stim = 0) {
   for @vcf-files -> $vcf-path {
     my $chr = extract-chr($vcf-path.IO.basename);
     for @sample-names -> $sample {
-      my $bam-file = 
       my $outpath= "$outdir/{$chr}_{$sample}.csv";
       my %env-vars = genome_ref => $conf<genome-ref>,
 		    output_csv => $outpath,
@@ -80,6 +78,7 @@ sub read-vcf-samples($vcf-path) {
   return @res;
 }
 sub read-config($config-path) {
+  use Config::Simple;
   my $conf = Config::Simple.read($config-path) :f('ini');
   return $conf<config>;
 }

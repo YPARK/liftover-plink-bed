@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --time=03:59:59
+#SBATCH --mem=5gb
+
+echo "input: ${1}"
+echo "output: ${2}"
+echo "chrom: ${3}"
+chr="$3"
+
+FLAGS=""
+if [[ "$chr" == *"X"* ]] ; then
+  FLAGS="-X"
+fi
+if [[ "$chr" == *"Y"* ]] ; then
+  FLAGS="$FLAGS -Y"
+fi
+if [[ "$chr" == *"MT"* ]] ; then
+  FLAGS="$FLAGS -MT"
+fi
+
+
+opticall -in $1 -out $2 $FLAGS

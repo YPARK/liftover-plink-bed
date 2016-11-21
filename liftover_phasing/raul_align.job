@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --time=23:59:59
+#SBATCH --mem=40gb
+
+
+set -u
+set -e
+
+echo "input: ${1}"
+echo "output: ${2}"
+echo "reference: ${3}"
+
+module load GenotypeHarmonizer
+
+GenotypeHarmonizer.sh \
+    -i $1 \
+    -I PLINK_BED \
+    -o $2 \
+    -O PLINK_BED \
+    -r $3 \
+    -R VCF \
+    --update-id \
+    --variants 500 \
+    --mafAlign 0.05
