@@ -9,9 +9,12 @@ set -e
 
 module load GATK
 
+# a VCF file indexed by picard triggers an error with GATK
+# easiest way to avoid this is to delete the VCF index if it exists.
+rm -f "${input_vcf}.idx"
 srun java \
    -XX:ParallelGCThreads=1  -Xmx4g \
-   -Djava.io.tmpdir="$tmp_ase" \
+   -Djava.io.tmpdir="$java_tmp" \
    -jar ${EBROOTGATK-dummy}/GenomeAnalysisTK.jar \
    -R "$genome_ref" \
    -T ASEReadCounter \
@@ -22,4 +25,5 @@ srun java \
    -U ALLOW_N_CIGAR_READS \
    -dt NONE \
    --minMappingQuality 10
+
 

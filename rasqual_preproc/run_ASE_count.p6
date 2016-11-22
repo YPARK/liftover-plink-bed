@@ -8,7 +8,8 @@
 # 	
 # 
 
-sub MAIN($outdir, $min-after-stim = 0, $java-tmp-dir='tmp/java') {
+sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp-dir='tmp/java') {
+  die("$vcf-file does not exist") if not $vcf-file.IO.f;
   my $conf = read-config('config.ini');
   #die("output directory '$outdir' already exists..") if $outdir.IO.d;
   mkdir $outdir;
@@ -17,38 +18,32 @@ sub MAIN($outdir, $min-after-stim = 0, $java-tmp-dir='tmp/java') {
     mkdir $java-tmp-dir;
   }
 
-  my @vcf-files = locate-vcf-files $conf<vcf-dir>;
-  # all VCF files must have the same set of samples.
-  # I don't check this ...
-  my @sample-names = read-vcf-samples(@vcf-files[0]);
+  my @sample-names = read-vcf-samples($vcf-file);
   my %sample-bam = sample-to-bam(@sample-names, $conf<rna-dir>, min-after-stim => $min-after-stim);
 
   write-sample-bam-mapping %sample-bam, "$outdir/sample_bam_map.tsv";
 
-  for @vcf-files -> $vcf-path {
-    my $chr = extract-chr($vcf-path.IO.basename);
-    for @sample-names -> $sample {
-      my $outpath= "$outdir/{$chr}_{$sample}.csv";
-      my %env-vars = genome_ref => $conf<genome-ref>,
-		    output_csv => $outpath,
-		    input_bam => %sample-bam{$sample},
-		    input_vcf => $vcf-path,
-		    java_tmp => $java-tmp-dir;
-      for %env-vars.kv -> $k, $v {
-	%*ENV{$k} = $v;
-      }
-      file-must-exist %*ENV<input_bam>;
-      file-must-exist %*ENV<input_vcf>;
-      file-must-exist %*ENV<genome_ref>;
-      my $shell-cmd = qq:to/END/;
-	sbatch \\
-	  -J "ASE_{$chr}_{$sample}" \\
-	  -o "{$outpath}.out" \\
-	  -e "{$outpath}.err" \\
-	    {"countASE.job".IO.abspath}
-      END
-      gen-recompute-script("{$outpath}.rerun.bash", $shell-cmd, %env-vars);
+  for @sample-names -> $sample {
+    my $outpath= "$outdir/{$sample}.csv".IO.abspath;
+    my %env-vars = genome_ref => $conf<genome-ref>,
+		  output_csv => $outpath,
+		  input_bam => %sample-bam{$sample},
+		  input_vcf => $vcf-file,
+		  java_tmp => $java-tmp-dir;
+    for %env-vars.kv -> $k, $v {
+      %*ENV{$k} = $v;
     }
+    file-must-exist %*ENV<input_bam>;
+    file-must-exist %*ENV<input_vcf>;
+    file-must-exist %*ENV<genome_ref>;
+    my $shell-cmd = qq:to/END/;
+      sbatch \\
+	-J "ASE_{$sample}" \\
+	-o "{$outpath}.out" \\
+	-e "{$outpath}.err" \\
+	  {"countASE.job".IO.abspath}
+    END
+    gen-recompute-script("{$outpath}.rerun.bash", $shell-cmd, %env-vars);
   }
 }
 
@@ -65,14 +60,6 @@ sub write-sample-bam-mapping(%m, $path) {
   say "Writing sample name to bam file mapping to {$path}.";
   my $txt = %m.kv.map(-> $k, $v {"$k\t$v"}).join("\n");
   spurt $path, $txt;
-}
-
-sub locate-vcf-files($vcf-dir) {
-    $vcf-dir.IO.dir(test => / '.' vcf $/).map(*.Str);
-}
-
-sub extract-chr($filename) {
-  ~$0 if $filename ~~ /chr_(\d+)/ or die("Unable to extract chrom name from $filename");
 }
 
 sub read-vcf-samples($vcf-path) {
