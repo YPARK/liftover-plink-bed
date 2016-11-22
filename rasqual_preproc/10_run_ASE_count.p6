@@ -1,5 +1,4 @@
 #!/usr/bin/env perl6
-
 # TODO:
 #
 # Ok to do everything in one go, but:
@@ -28,8 +27,8 @@ sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp
     my %env-vars = genome_ref => $conf<genome-ref>,
 		  output_csv => $outpath,
 		  input_bam => %sample-bam{$sample},
-		  input_vcf => $vcf-file,
-		  java_tmp => $java-tmp-dir;
+		  input_vcf => $vcf-file.IO.abspath,
+		  java_tmp => $java-tmp-dir.IO.abspath;
     for %env-vars.kv -> $k, $v {
       %*ENV{$k} = $v;
     }
@@ -43,7 +42,8 @@ sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp
 	-e "{$outpath}.err" \\
 	  {"countASE.job".IO.abspath}
     END
-    gen-recompute-script("{$outpath}.rerun.bash", $shell-cmd, %env-vars);
+    gen-recompute-script("{$outpath}.compute.bash", $shell-cmd, %env-vars);
+    #run "bash", "{$outpath}.compute.bash";
   }
 }
 
