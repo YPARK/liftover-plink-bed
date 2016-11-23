@@ -1,11 +1,9 @@
 #!/usr/bin/env perl6
-# TODO:
 #
-# Ok to do everything in one go, but:
-#  1. I absolutely need to write down the bam file used per sample name.
-#  2. I should therefore also process every VCF file in one go
+# Generates slurm jobs that does ASE counting per pair of
+# RNA-seq bam file and phased genotype vcf file.
 # 	
-# 
+# Genotype to bam file mapping is written to $outdir/sample_bam_map.tsv
 
 sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp-dir='tmp/java') {
   die("$vcf-file does not exist") if not $vcf-file.IO.f;
