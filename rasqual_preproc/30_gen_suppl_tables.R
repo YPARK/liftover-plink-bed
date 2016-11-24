@@ -116,7 +116,7 @@ if (!file.exists(path$gene_txdb)) {
     host = ensembl_version)
   saveDb(txdb, path$gene_txdb)
 } else {
-  txdb <- loadDb(path$gene_txdb)
+  txdb <- AnnotationDbi::loadDb(path$gene_txdb)
 }
 uxons <- reduce(exonsBy(txdb, "gene"))
 
@@ -138,7 +138,7 @@ get_exon_unions <- function(uxons) {
 
 path$gene_exon_union_df <- file.path(path$out_dir, 'gene_exon_union.tsv')
 if (!file.exists(path$gene_exon_union_df)) {
-  print("Computing gene exon union table (very time consuming ...")
+  print("Computing gene exon union table (very time consuming ...)")
   rasqual_df <- get_exon_unions(uxons)
   rasqual_df %>% write_delim(path$gene_exon_union_df, delim = '\t')
 } else {
@@ -167,5 +167,4 @@ if (file.exists(path$snp_counts)) {
   snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = 5e5)
   snp_counts %>% write_delim(path$snp_counts)
 }
-
 
