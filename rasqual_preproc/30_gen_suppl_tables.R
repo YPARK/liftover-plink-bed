@@ -59,7 +59,9 @@ df <- rename_columns_with_bad_names(
   df, name_mapping$bam_id, name_mapping$sample)
 
 df %>% write_delim(path$count_table, delim = '\t')
-count_table <- df
+count_matrix <- df %>%  as.data.frame %>% column_to_rownames('gene_id')
+saveRasqualMatrices(
+  list(gsTCC_time0 = count_matrix), "30_out", file_suffix = "expression")
 cat("Wrote table to ", path$count_table, "\n")
 
 ##
@@ -73,7 +75,6 @@ devtools::install_github("kauralasoo/rasqual/rasqualTools")
 library(rasqualTools)
 
 path$gene_gc_content <- file.path(path$out_dir, 'gene_gc_content.csv')
-count_matrix <- count_table %>%  as.data.frame %>% column_to_rownames('gene_id')
 
 
 download_geneid_and_gc <- function(mart) {
@@ -95,11 +96,11 @@ gene_gc_content <- load_geneid_and_gc(path$gene_gc_content)
 
 size_factors = rasqualCalculateSampleOffsets(count_matrix, gene_gc_content, gc_correct = TRUE)
 saveRasqualMatrices(
-  data_list = list(gsTC_T0 = size_factors),
+  data_list = list(gsTCC_time0 = size_factors),
   output_dir = path$out_dir,
   file_suffix = "size_factors_gc")
 
-##
+#
 ## Step 03. Compute exon unions
 ##
 pacman::p_load(
@@ -142,14 +143,17 @@ if (!file.exists(path$gene_exon_union_df)) {
   rasqual_df <- get_exon_unions(uxons)
   rasqual_df %>% write_delim(path$gene_exon_union_df, delim = '\t')
 } else {
-  rasqual_df <- read_delim(path$gene_exon_union_df, delim = '\t')
+  rasqual_df <- read_delim(path$gene_exon_union_df, delim = '\t',
+                           col_types = 'ccicc'
+                           )
 }
 
 path$vcf_count <- 'output/all.counts.vcf'
 path$snp_coords <- file.path(path$out_dir, 'snp_coords.tsv')
 
 if (file.exists(path$snp_coords)) {
-  snp_coords <- read_delim(path$snp_coords, delim = '\t')
+  snp_coords <- read_delim(path$snp_coords, delim = '\t',
+                           col_types = 'cic')#,
 } else {
   assert_that(file.exists(path$vcf_count))
   vcf <- readVcf(path$vcf_count)
@@ -162,9 +166,10 @@ if (file.exists(path$snp_coords)) {
 
 path$snp_counts <- file.path(path$out_dir, 'snp_counts.tsv')
 if (file.exists(path$snp_counts)) {
-  snp_counts <- read_delim(path$snp_counts, delim = '\t')
+  snp_counts <- read_delim(path$snp_counts, delim = '\t',
+                           col_types = 'cciccddii')
 } else {
   snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = 5e5)
-  snp_counts %>% write_delim(path$snp_counts)
+  snp_counts %>% write_delim(path$snp_counts, delim = '\t')
 }
 
