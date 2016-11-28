@@ -1,7 +1,7 @@
 #!/bin/bash
 srcd=0_illumina_intensities
 dstd=10_ichip_lldeep/individual
-export JAVA_TMP=tmp_java
+export JAVA_TMP=tmp/java
 mkdir -p $dstd $JAVA_TMP
 for src in "$srcd"/*.txt ; do
   name=$(basename "$src" .txt)

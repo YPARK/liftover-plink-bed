@@ -14,7 +14,7 @@ java  \
   -Xmx8g -Xms8g \
    -XX:ParallelGCThreads=1 \
    -Djava.io.tmpdir="$JAVA_TMP" \
-  -jar inpute_data/GenomeStudioExportToOptiCall-1.3-SNAPSHOT-jar-with-dependencies.jar \
+  -jar input_data/GenomeStudioExportToOptiCall-1.3-SNAPSHOT-jar-with-dependencies.jar \
     -r "$src" \
     -o "$dstd" \
     -p ImmunoProbes_gappedPassedProbes.txt \

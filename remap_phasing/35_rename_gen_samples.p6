@@ -1,6 +1,8 @@
 #!/usr/bin/env perl6
 
-sub MAIN($keep-csv-path, $gen-dir, $backup-postfix='.old') {
+# $keep-csv-path: file with samples you want to keep, with a second column for the new name.
+# $gen-dir: file containing files in genotype file format for Oxford statistical genetics tools,
+sub MAIN($keep-csv-path='input_data/keep_list.csv', $gen-dir='30_gen', $backup-postfix='.old') {
   my %to-new = read-sample-map $keep-csv-path;
   my @sample-files = $gen-dir.IO.dir(test => / '.' sample $/);
   for @sample-files -> $dst-path { 
