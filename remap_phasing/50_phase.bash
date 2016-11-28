@@ -31,10 +31,11 @@ mkdir -p "$DST_DIR"
 for x in "$SRC_DIR"/*.bim; do
 	export prefix="${x%.bim}"
 	export dst="$DST_DIR/$(basename $prefix).phased.vcf"
-	echo "$prefix $dst"
 	if [[ ! -f "$dst" || "$RECOMPUTE" = true ]] ; then
 		echo "Phasing $prefix ..."
 		sbatch -o ${dst}.out -e ${dst}.err 50_phase.job
+	else
+	  echo "skipping, file exists: $dst"
 	fi
 done
 

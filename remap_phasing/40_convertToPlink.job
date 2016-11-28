@@ -8,18 +8,6 @@ set -e
 
 module load GenotypeHarmonizer
 
-if [[ "$3" == "XY" ]] ; then
-
-  GenotypeHarmonizer.sh \
-    --input $1 \
-    --inputType GEN \
-    --output $2 \
-    --outputType PLINK_BED \
-    --update-id --variants 500 --mafAlign 0.05 \
-    --inputProb 0.7 \
-    --forceChr ${3}
-
-else
 GenotypeHarmonizer.sh \
     --input $1 \
     --inputType GEN \
@@ -31,4 +19,3 @@ GenotypeHarmonizer.sh \
     --inputProb 0.7 \
     --forceChr ${3}
 
-fi

@@ -7,21 +7,19 @@ dstd="40_plink"
 mkdir -p ${dstd}
 
 
-for chr in {1..22} "X" "XY" "Y"
+for chr in {1..22}
 do
+  export ref_chrom=$(echo "$genome_ref/ALL.chr${chr}.phase3_"*".20130502.genotypes.vcf.gz")
   plinkChr=${chr}
   if [ -f "${dstd}/chr_${chr}.bim" ] ; then
     echo "already computed for chromosome $chr. Skipping"
     continue
   fi
 
-  if [[ "$chr" != "XY" ]] ; then
-    export ref_chrom=$(echo "$genome_ref/ALL.chr${chr}.phase3_"*".20130502.genotypes.vcf.gz")
-    if [ ! -f "$ref_chrom" ] ; then
-      echo "unable to find $ref_chrom"
-      echo "aborting ..."
-      exit 1
-    fi
+  if [ ! -f "$ref_chrom" ] ; then
+    echo "unable to find $ref_chrom"
+    echo "aborting ..."
+    exit 1
   fi
 
   sbatch -o "${dstd}/chr_${chr}.out" -e "${dstd}/chr_${chr}.err" \

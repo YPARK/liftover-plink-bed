@@ -25,13 +25,17 @@ sub MAIN($keep-csv-path='input_data/keep_list.csv', $gen-dir='30_gen', $backup-p
   }
 
   my $sample-list-path = "$gen-dir/relevant-samples.txt";
-  my $fh = $sample-list-path, :w;
-  $fh.say("{$_}\t{$_}") for %to-new.values;
+  say "Writing mapping to $sample-list-path";
+  say "In total {%to-new.elems} values";
+  my $fh = open $sample-list-path, :w;
+  for %to-new.values {
+    $fh.say("$_\t$_");
+  }
   $fh.close;
   say "Wrote sample list to $sample-list-path";
 }
 
-sub read-sample-map($path) {
+sub read-sample-map($path) returns Hash {
   %($path.IO.lines>>.split(',').flat);
 }
 
