@@ -1,0 +1,8 @@
+15_mergeASECounts.py -
+  krever en tsv fil med <sample_name> <csv-path> entries
+  skriver en kombinert liste til stdout
+
+20_vcfAdd -
+  Counts file fra 15
+  mapping between sample name and genotype id (1-1?)
+  VCFFile

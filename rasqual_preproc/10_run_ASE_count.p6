@@ -9,11 +9,8 @@ sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp
   die("$vcf-file does not exist") if not $vcf-file.IO.f;
   my $conf = read-config('config.ini');
   #die("output directory '$outdir' already exists..") if $outdir.IO.d;
-  mkdir $outdir;
-
-  if not $java-tmp-dir.IO.d {
-    mkdir $java-tmp-dir;
-  }
+  mkdir $outdir if not $outdir.IO.d;
+  mkdir $java-tmp-dir if not $java-tmp-dir.IO.d;
 
   my @sample-names = read-vcf-samples($vcf-file);
   my %sample-bam = sample-to-bam(@sample-names, $conf<rna-dir>, min-after-stim => $min-after-stim);
@@ -55,7 +52,7 @@ sub file-must-exist(Str $path) {
 }
 
 sub write-sample-bam-mapping(%m, $path) {
-  say "Writing sample name to bam file mapping to {$path}.";
+  say "Writing sample name to bam file mapping to {$path}";
   my $txt = %m.kv.map(-> $k, $v {"$k\t$v"}).join("\n");
   spurt $path, $txt;
 }
@@ -106,6 +103,7 @@ sub id-to-bamfile(@file-paths, :$stimulation-time=0) returns Hash {
   my %names;
   for @file-paths -> $path {
     given $path.IO.basename {
+      # Bam file name is a (gluten specific) T-Cell Clone
       when /(TCC '-'? \d+) .* t(\d+)/ {
 	%names.push($0 => $path.IO.abspath) if $1 == $stimulation-time;
       }
@@ -113,7 +111,7 @@ sub id-to-bamfile(@file-paths, :$stimulation-time=0) returns Hash {
   }
   for %names.kv -> $k, $v is rw {
     if $v.elems > 1 {
-      $v = @($v)[0];
+      $v = @($v.sort)[0];
     }
   }
 

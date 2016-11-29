@@ -1,5 +1,9 @@
 #!/bin/bash
-
+#
+# preprocessing for 15_mergeASCounts.py
+# Creates a mapping from sample_name to RNA_ASE_COUNTS.csv file
+# TODO general cleanup
+#
 set -e
 set -u
 
