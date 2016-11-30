@@ -152,6 +152,10 @@ if (!file.exists(path$CACHE$gene_exon_union_df)) {
                            )
 }
 
+##
+## Step  04. Count SNPs per window
+##
+
 
 print("Computing SNP coordinates")
 if (file.exists(path$CACHE$snp_coords)) {
@@ -173,7 +177,7 @@ if (file.exists(path$TIMEPOINT$snp_counts)) {
   snp_counts <- read_delim(path$TIMEPOINT$snp_counts, delim = '\t',
                            col_types = 'cciccddii')
 } else {
-  snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = 5e5)
+  snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = path$INPUT$snp_cis_window)
   snp_counts %>% write_delim(path$TIMEPOINT$snp_counts, delim = '\t')
 }
 
