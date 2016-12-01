@@ -13,7 +13,7 @@ args = parser.parse_args()
 rasqual_file = open(args.rasqualOut)
 print "\t".join(["snps","gene","statistic","pvalue","FDR","beta"])
 for line in rasqual_file:
-        if length(line.stip()) == 0:
+        if len(line.strip()) == 0:
             continue
 	line = line.rstrip()
 	fields = line.split("\t")

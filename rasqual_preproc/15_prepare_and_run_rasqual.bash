@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# preprocessing for 15_mergeASCounts.py
-# Creates a mapping from sample_name to RNA_ASE_COUNTS.csv file
-# TODO general cleanup
+# preprocessing prior to running rasqual
+# runs rasqual without slurm and parallelism
+# should be transferred into a workflow script
 #
 set -e
 set -u
@@ -44,6 +44,7 @@ must_exist $ORIG_VCF
 must_exist $RAW_CONFIG
 must_exist $FULL_COUNT_TABLE
 require tabix HTSlib
+module load scipy # don't know how to check if loaded
 
 mkdir -p $R_CACHE
 
@@ -104,6 +105,7 @@ for tpath in 10_counts/time_* ; do
   offsets=$dstd/${TIME_NAME}.size_factors_gc.bin
   n=$(wc -l < $sample_geno_map) # < pipe to stdin gives clean numeric output
   outprefix=output/${TIME_NAME}
+  rasqual_finished=${outprefix}.is_computed
   geneids=$dstd/geneids.txt
   batch_file=$dstd/batch_spec.txt
   batch_file_prefix=$dstd/geneids_batch_
@@ -122,17 +124,28 @@ for tpath in 10_counts/time_* ; do
       echo >> $batch_file
     done
   fi
- python2 $run_rasqual_py \
-  --readCounts $read_counts \
-  --offsets $offsets \
-  --n $n \
-  --vcf $vcf_counts \
-  --outprefix $outprefix \
-  --geneids $geneids \
-  --geneMetadata $gene_metadata \
-  --execute $execute \
-  --rasqualBin $rasqual_bin \
-  < $batch_file
-
-
+  if [ ! -f $rasqual_finished ] ; then
+  # should run once ber line in batch file through slurm!
+   python2 $run_rasqual_py \
+    --readCounts $read_counts \
+    --offsets $offsets \
+    --n $n \
+    --vcf $vcf_counts \
+    --outprefix $outprefix \
+    --geneids $geneids \
+    --geneMetadata $gene_metadata \
+    --execute $execute \
+    --rasqualBin $rasqual_bin \
+    < $batch_file
+ else
+   echo "Skipping rasqual run. $rasqual_finished exists."
+ fi
+ partial_result_prefix=${outprefix}.$(basename $batch_file_prefix)
+ merged_result=${outprefix}.merged.all.txt
+ eigenmt_result=${outprefix}.merged.eigenmt.tsv
+ if [ ! -f $merged_result ] ; then
+   echo "merging results to $merged_result"
+   cut -f 1-4,7-9,11-15,17,18,23-25 ${partial_result_prefix}* > $merged_result
+ fi
+ [ -f $eigenmt_result ] || python rasqualToEigenMT.py --rasqualOut $merged_result > $eigenmt_result
 done
