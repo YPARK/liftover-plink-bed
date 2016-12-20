@@ -6,6 +6,8 @@
 
 # rasqualTools requires at least 3.2.0
 stopifnot(getRversion() >= "3.2.0")
+options(error=traceback)
+options(verbose=TRUE)
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
@@ -177,7 +179,10 @@ if (file.exists(path$TIMEPOINT$snp_counts)) {
   snp_counts <- read_delim(path$TIMEPOINT$snp_counts, delim = '\t',
                            col_types = 'cciccddii')
 } else {
-  snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = path$INPUT$snp_cis_window)
+  assert_that(path$INPUT %has_name% 'snp_window_size')
+  cis_window <- as.numeric(path$INPUT$snp_window_size)
+  assert_that(is.count(cis_window))
+  snp_counts = countSnpsOverlapingExons(rasqual_df, snp_coords, cis_window = cis_window)
   snp_counts %>% write_delim(path$TIMEPOINT$snp_counts, delim = '\t')
 }
 

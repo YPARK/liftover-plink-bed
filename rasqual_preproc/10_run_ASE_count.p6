@@ -76,15 +76,15 @@ sub sample-to-bam(@sample-names, $bam-dir, :$min-after-stim=0) {
     my @files = read-filenames $bam-dir;
     my %paths = id-to-bamfile(@files, stimulation-time => $min-after-stim);
     my @common-ids = (@sample-names (&) %paths.keys).keys;
+    my @uncommon-ids = @sample-names (-) @common-ids;
     if @common-ids.elems < 1|@sample-names.elems {
       say @sample-names;
-      say @common-ids;
+      say @common-ids.sort;
+      say @uncommon-ids;
       die(
 	qq:to/EOF/;
-	#files: {@files.elems}
-	#paths: {%paths.elems}
-	sample-names: {@sample-names}
-	bam-names:    {%paths.keys}
+	sample-names: {sort @sample-names}
+	bam-names:    {sort %paths.keys}
 	Number of samples: {@sample-names.elems}
 	Unable to find bam for all vcf samples [{@common-ids.elems} < {@sample-names.elems}]
 	EOF

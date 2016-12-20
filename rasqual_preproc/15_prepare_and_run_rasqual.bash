@@ -45,6 +45,7 @@ must_exist $RAW_CONFIG
 must_exist $FULL_COUNT_TABLE
 require tabix HTSlib
 module load scipy # don't know how to check if loaded
+module load GSL # don't know how to check if loaded
 
 mkdir -p $R_CACHE
 
