@@ -105,7 +105,7 @@ for tpath in 10_counts/time_* ; do
   read_counts=$dstd/${TIME_NAME}.expression.bin
   offsets=$dstd/${TIME_NAME}.size_factors_gc.bin
   n=$(wc -l < $sample_geno_map) # < pipe to stdin gives clean numeric output
-  outprefix=output/${TIME_NAME}
+  outprefix=output/lead_SNP_${TIME_NAME}
   rasqual_finished=${outprefix}.is_computed
   geneids=$dstd/geneids.txt
   batch_file=$dstd/batch_spec.txt
@@ -137,6 +137,7 @@ for tpath in 10_counts/time_* ; do
     --geneMetadata $gene_metadata \
     --execute $execute \
     --rasqualBin $rasqual_bin \
+    --parameters '\\--lead-snp' \
     < $batch_file
  else
    echo "Skipping rasqual run. $rasqual_finished exists."
