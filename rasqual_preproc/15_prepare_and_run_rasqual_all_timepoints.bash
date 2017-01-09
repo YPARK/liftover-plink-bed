@@ -14,13 +14,13 @@ module load R/3.3.1-foss-2015b
 snp_window_size=5e5
 
 function require() {
-	bin="$1"
-	mod="${2-$bin}"
-	command -v "$bin" >/dev/null 2>&1 || module load "$mod"
-	if ! command -v "$bin" > /dev/null 2>&1 ; then
-		echo > /dev/stderr "Unable to loacate $bin. aborting ..."
-		exit 1
-	fi
+  bin="$1"
+  mod="${2-$bin}"
+  command -v "$bin" >/dev/null 2>&1 || module load "$mod"
+  if ! command -v "$bin" > /dev/null 2>&1 ; then
+    echo > /dev/stderr "Unable to loacate $bin. aborting ..."
+    exit 1
+  fi
 }
 
 function must_exist() {
@@ -49,85 +49,123 @@ module load GSL # don't know how to check if loaded
 
 mkdir -p $R_CACHE
 
-for tpath in 10_counts/time_* ; do
-  tp=$(basename $tpath)
-  dstd=$(readlink -m "$BASE_OUT/$tp")
-  mkdir -p $dstd
+TIMEPOINT=all
+dstd=$(readlink -m "$BASE_OUT/$TIMEPOINT")
+mkdir -p $dstd
 
-  # preparing to merge sample counts to common table
-  sample_map="$dstd/sample_paths.tsv"
-  ase_counts="$dstd/ase_counts.tsv"
-  if [ ! -f $ase_counts ] ; then
+# preparing to merge sample counts to common table
+sample_map="$dstd/sample_paths.tsv"
+ase_counts="$dstd/ase_counts.tsv"
+if [ ! -f $ase_counts ] ; then
+  rm -f $sample_map
+  for tpath in 10_counts/time_* ; do
+    tp=$(basename $tpath)
     echo "Storing mapping of sample to CSV count file in $sample_map"
     for csv in $tpath/*.csv ; do 
-      name=$(basename $csv .csv)
+      name="${tp}_$(basename $csv .csv)"
       echo -e "$name\t$csv"
-    done > "$sample_map"
+    done >> "$sample_map"
+  done
 
-    echo "merging counts and storing results in $ase_counts"
-    python $sdir/15_mergeASECounts.py --sample_list $sample_map > $ase_counts
-  fi
+  echo "merging counts and storing results in $ase_counts"
+  python $sdir/15_mergeASECounts.py --sample_list $sample_map > $ase_counts
+fi
 
-  sample_geno_map=$dstd/sample_geno_map.tsv
-  vcf_counts=$dstd/ase_counts.vcf.gz
-  if [ ! -f ${vcf_counts} ] ; then
-    echo "Storing mapping of sample name to genotype name in $sample_geno_map"
-    # is currently just an identity mapping
-    awk '{print $1 "\t" $1}' $sample_map > $sample_geno_map
-    echo "Creating count vcf file for timepoint"
-    python $sdir/20_vcfAddASE.py \
-      --ASEcounts $ase_counts \
-      --ASESampleGenotypeMap $sample_geno_map \
-      --VCFfile $ORIG_VCF \
-      | bgzip -c > $vcf_counts
-    tabix -p vcf $vcf_counts
-  fi
+for bam_map in 10_counts/time_*/sample_bam_map.tsv ; do
+  tp=$(basename $(dirname $bam_map))
+  awk -v tp=$tp '{print tp "_" $0}' $bam_map
+done > $dstd/sample_bam_map.tsv
 
-  tp_config=$dstd/config.ini
-  TIME_NAME="gsTCC_${tp}"
-  if [ ! -f $tp_config ] ; then
-    echo "creating timepoint specific config file: $tp_config"
-    GENO_BAM_MAP=$tpath/sample_bam_map.tsv \
-      COUNT_TABLE=$FULL_COUNT_TABLE \
-      DST_DIR=$dstd \
-      CACHE_DIR=$R_CACHE \
-      ORIG_VCF=$ORIG_VCF \
-      TIME_NAME=$TIME_NAME \
-      SNP_CIS_WINDOW=$snp_window_size \
-      envsubst < $RAW_CONFIG > $tp_config
-    Rscript 30_gen_suppl_tables.R $tp_config
-  fi
 
-  #
-  # Prepare running Rasqual
-  #
-  mkdir -p output
-  read_counts=$dstd/${TIME_NAME}.expression.bin
-  offsets=$dstd/${TIME_NAME}.size_factors_gc.bin
-  n=$(wc -l < $sample_geno_map) # < pipe to stdin gives clean numeric output
-  outprefix=output/lead_SNP_${TIME_NAME}
-  rasqual_finished=${outprefix}.is_computed
-  geneids=$dstd/geneids.txt
-  batch_file=$dstd/batch_spec.txt
-  batch_file_prefix=$dstd/geneids_batch_
-  gene_metadata=$dstd/snp_counts.tsv
-  execute=True
-  rasqual_bin=/groups/umcg-wijmenga/tmp04/umcg-elund/apps/rasqual/src/rasqual
-  run_rasqual_py=runRasqual.py
+#
+# duplicate vcf file to match input genotypes 
+#
 
-  [ -f $geneids ] || cut -f 1 ${read_counts%.bin}.txt > $geneids
+function add_sample_prefix {
+  src=$1
+  dst=$2
+  prefix=$3
+  # Adds a prefix to the samples within a bcf file.
+  tmp=$(mktemp)
+  bcftools query -l $src | awk -v g=$prefix '{ print g $0 }'  > $tmp
+  bcftools reheader -s $tmp $src > $dst
+  bcftools index $dst
+  echo "created $dst"
+  rm -f $tmp
+}
+dup_vcf="$dstd/dup.vcf"
+dup_tmp_dir=$dstd/dup_tmp
+if [ ! -f $dup_vcf ] ; then
+  bgzip -c $ORIG_VCF > $dstd/orig.vcf.gz
+  mkdir -p $dup_tmp_dir
+  for tpath in 10_counts/time_* ; do
+    tp=$(basename $tpath)
+    dup_tp=$dup_tmp_dir/${tp}.vcf.gz
+    add_sample_prefix $dstd/orig.vcf.gz $dup_tp "${tp}_"
+  done
+  bcftools merge -o $dup_vcf -O v $dup_tmp_dir/*.vcf.gz
+fi
 
-  if [ ! -f $batch_file ] ; then
-    split -l 5000 $geneids $batch_file_prefix
-    for x in ${batch_file_prefix}* ; do
-      echo -ne "$(basename $x)\t" >> $batch_file
-      tr '\n' ',' < $x >> $batch_file
-      echo >> $batch_file
-    done
-  fi
-  if [ ! -f $rasqual_finished ] ; then
+sample_geno_map=$dstd/sample_geno_map.tsv
+vcf_counts=$dstd/ase_counts.vcf.gz
+if [ ! -f ${vcf_counts} ] ; then
+  echo "Storing mapping of sample name to genotype name in $sample_geno_map"
+  # is currently just an identity mapping
+  awk '{print $1 "\t" $1}' $sample_map > $sample_geno_map
+  echo "Creating count vcf file for timepoint"
+  python $sdir/20_vcfAddASE.py \
+    --ASEcounts $ase_counts \
+    --ASESampleGenotypeMap $sample_geno_map \
+    --VCFfile $dup_vcf \
+    | bgzip -c > $vcf_counts
+  tabix -p vcf $vcf_counts
+fi
+
+tp_config=$dstd/config.ini
+TIME_NAME="gsTCC_${TIMEPOINT}"
+if [ ! -f $tp_config ] ; then
+  echo "creating timepoint specific config file: $tp_config"
+  GENO_BAM_MAP=$dstd/sample_bam_map.tsv \
+    COUNT_TABLE=$FULL_COUNT_TABLE \
+    DST_DIR=$dstd \
+    CACHE_DIR=$R_CACHE \
+    ORIG_VCF=$dup_vcf \
+    TIME_NAME=$TIME_NAME \
+    SNP_CIS_WINDOW=$snp_window_size \
+    envsubst < $RAW_CONFIG > $tp_config
+  Rscript 30_gen_suppl_tables.R $tp_config
+fi
+
+#
+# Prepare running Rasqual
+#
+mkdir -p output
+read_counts=$dstd/${TIME_NAME}.expression.bin
+offsets=$dstd/${TIME_NAME}.size_factors_gc.bin
+n=$(wc -l < $sample_geno_map) # < pipe to stdin gives clean numeric output
+outprefix=output/lead_SNP_${TIME_NAME}
+rasqual_finished=${outprefix}.is_computed
+geneids=$dstd/geneids.txt
+batch_file=$dstd/batch_spec.txt
+batch_file_prefix=$dstd/geneids_batch_
+gene_metadata=$dstd/snp_counts.tsv
+execute=True
+rasqual_bin=/groups/umcg-wijmenga/tmp04/umcg-elund/apps/rasqual/src/rasqual
+run_rasqual_py=runRasqual.py
+
+[ -f $geneids ] || cut -f 1 ${read_counts%.bin}.txt > $geneids
+
+if [ ! -f $batch_file ] ; then
+  split -l 5000 $geneids $batch_file_prefix
+  for x in ${batch_file_prefix}* ; do
+    echo -ne "$(basename $x)\t" >> $batch_file
+    tr '\n' ',' < $x >> $batch_file
+    echo >> $batch_file
+  done
+fi
+if [ ! -f $rasqual_finished ] ; then
   # should run once ber line in batch file through slurm!
-   python2 $run_rasqual_py \
+  python2 $run_rasqual_py \
     --readCounts $read_counts \
     --offsets $offsets \
     --n $n \
@@ -139,15 +177,14 @@ for tpath in 10_counts/time_* ; do
     --rasqualBin $rasqual_bin \
     --parameters '\\--lead-snp' \
     < $batch_file
- else
-   echo "Skipping rasqual run. $rasqual_finished exists."
- fi
- partial_result_prefix=${outprefix}.$(basename $batch_file_prefix)
- merged_result=${outprefix}.merged.all.txt
- eigenmt_result=${outprefix}.merged.eigenmt.tsv
- if [ ! -f $merged_result ] ; then
-   echo "merging results to $merged_result"
-   cut -f 1-4,7-9,11-15,17,18,23-25 ${partial_result_prefix}* > $merged_result
- fi
- [ -f $eigenmt_result ] || python rasqualToEigenMT.py --rasqualOut $merged_result > $eigenmt_result
-done
+else
+  echo "Skipping rasqual run. $rasqual_finished exists."
+fi
+partial_result_prefix=${outprefix}.$(basename $batch_file_prefix)
+merged_result=${outprefix}.merged.all.txt
+eigenmt_result=${outprefix}.merged.eigenmt.tsv
+if [ ! -f $merged_result ] ; then
+  echo "merging results to $merged_result"
+  cut -f 1-4,7-9,11-15,17,18,23-25 ${partial_result_prefix}* > $merged_result
+fi
+[ -f $eigenmt_result ] || python rasqualToEigenMT.py --rasqualOut $merged_result > $eigenmt_result
