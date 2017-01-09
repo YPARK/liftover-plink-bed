@@ -7,8 +7,8 @@
 
 sub MAIN($outdir, $vcf-file='input_data/all.vcf', $min-after-stim = 0, $java-tmp-dir='tmp/java') {
   die("$vcf-file does not exist") if not $vcf-file.IO.f;
+  die("config.ini does not exist") if not 'config.ini'.IO.f;
   my $conf = read-config('config.ini');
-  #die("output directory '$outdir' already exists..") if $outdir.IO.d;
   mkdir $outdir if not $outdir.IO.d;
   mkdir $java-tmp-dir if not $java-tmp-dir.IO.d;
 
