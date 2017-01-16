@@ -35,6 +35,7 @@ BASE_OUT=post_10
 ORIG_VCF=input_data/all.vcf
 
 RAW_CONFIG=30_file_paths.ini
+# TODO generate own count table
 FULL_COUNT_TABLE=/groups/umcg-pub/tmp04/projects/stimulated_gluten_specific_Tcell_clones_TCC23052016/pipelines/no_splice_junctions/results_reverse_complement_paired_fixed/counts.tsv
 
 sdir='.'
@@ -140,29 +141,30 @@ fi
 # Prepare running Rasqual
 #
 mkdir -p output
+outprefix=output/${TIME_NAME}
 read_counts=$dstd/${TIME_NAME}.expression.bin
 offsets=$dstd/${TIME_NAME}.size_factors_gc.bin
 n=$(wc -l < $sample_geno_map) # < pipe to stdin gives clean numeric output
-outprefix=output/lead_SNP_${TIME_NAME}
 rasqual_finished=${outprefix}.is_computed
-geneids=$dstd/geneids.txt
-batch_file=$dstd/batch_spec.txt
-batch_file_prefix=$dstd/geneids_batch_
+geneids=${outprefix}.geneids.txt
+batch_file=${outprefix}.batch_spec.txt
+batch_file_prefix=${outprefix}.geneids_batch_
 gene_metadata=$dstd/snp_counts.tsv
 execute=True
 rasqual_bin=/groups/umcg-wijmenga/tmp04/umcg-elund/apps/rasqual/src/rasqual
 run_rasqual_py=runRasqual.py
 
 [ -f $geneids ] || cut -f 1 ${read_counts%.bin}.txt > $geneids
-
 if [ ! -f $batch_file ] ; then
   split -l 5000 $geneids $batch_file_prefix
   for x in ${batch_file_prefix}* ; do
+    echo $x
     echo -ne "$(basename $x)\t" >> $batch_file
     tr '\n' ',' < $x >> $batch_file
     echo >> $batch_file
   done
 fi
+
 if [ ! -f $rasqual_finished ] ; then
   # should run once ber line in batch file through slurm!
   python2 $run_rasqual_py \
@@ -175,8 +177,9 @@ if [ ! -f $rasqual_finished ] ; then
     --geneMetadata $gene_metadata \
     --execute $execute \
     --rasqualBin $rasqual_bin \
-    --parameters '\\--lead-snp' \
     < $batch_file
+    # add this before batch_file line for lead snp analysis
+    #--parameters '\\--lead-snp' \
 else
   echo "Skipping rasqual run. $rasqual_finished exists."
 fi

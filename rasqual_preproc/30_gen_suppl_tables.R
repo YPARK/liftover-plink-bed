@@ -64,7 +64,7 @@ rename_columns_with_bad_names <- function(df, src, dst) {
 # select proper but wrongly named subset
 df <- df %>% select(gene_id = 1, one_of(name_mapping$bam_id))
 df <- rename_columns_with_bad_names(
-  df, name_mapping$bam_id, name_mapping$sample)
+  df, name_mapping$bam_id)
 
 df %>% write_delim(path$TIMEPOINT$count_table, delim = '\t')
 count_matrix <- df %>%  as.data.frame %>% column_to_rownames('gene_id')
