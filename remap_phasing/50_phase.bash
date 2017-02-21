@@ -24,15 +24,19 @@ require GenotypeHarmonizer.sh GenotypeHarmonizer
 require shapeit
 SRC_DIR=42_plink
 DST_DIR=50_phased
-RECOMPUTE=false
+RECOMPUTE=true
 
 
 mkdir -p "$DST_DIR"
 for x in "$SRC_DIR"/*.bim; do
-	export prefix="${x%.bim}"
-	export dst="$DST_DIR/$(basename $prefix).phased.vcf"
+	chr=$(basename "$x" .bim)
+	export src_prefix="${x%.bim}"
+	export dst_prefix="$DST_DIR/${chr}.phased"
+	export genetic_map=input_data/genetic_map_b37/genetic_map_${chr}_combined_b37.txt
+	export dst="${dst_prefix}.vcf"
+	[ -f $genetic_map ] || ( echo "unable to find $genetic_map. aborting"; exit 1)
 	if [[ ! -f "$dst" || "$RECOMPUTE" = true ]] ; then
-		echo "Phasing $prefix ..."
+		echo "Phasing $src_prefix ..."
 		sbatch -o ${dst}.out -e ${dst}.err 50_phase.job
 	else
 	  echo "skipping, file exists: $dst"
