@@ -20,7 +20,6 @@ if [[ ! -d "$DST_DIR" || "$RECOMPUTE" = true ]] ; then
     plink --bfile "$src_prefix" --make-bed \
       --out "$dst_prefix" \
       --geno 0.01 \
-      --maf 0.1 \
       --hwe 1e-7 | tee "${dst_prefix}.full_log"
 
     plink --bfile "$dst_prefix" --freq counts --out "$dst_prefix"
