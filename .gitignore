@@ -5,3 +5,5 @@ phase/input/hg18ToHg19.over.chain.gz
 phase/input/genetic_map_b37
 phase/input/1000GP_Phase3
 .Rproj.user
+.nextflow.log*
+.nextflow/
