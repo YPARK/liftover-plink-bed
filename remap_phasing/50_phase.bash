@@ -30,16 +30,12 @@ RECOMPUTE=true
 mkdir -p "$DST_DIR"
 for x in "$SRC_DIR"/*.bim; do
 	chr=$(basename "$x" .bim)
+	export chr=${chr#chr_}
 	export src_prefix="${x%.bim}"
-	export dst_prefix="$DST_DIR/${chr}.phased"
-	export genetic_map=input_data/genetic_map_b37/genetic_map_${chr}_combined_b37.txt
-	export dst="${dst_prefix}.vcf"
+	export dst_prefix="$DST_DIR/chr_${chr}.phased"
+	export genetic_map=input_data/genetic_map_b37/genetic_map_chr_${chr}_combined_b37.txt
 	[ -f $genetic_map ] || ( echo "unable to find $genetic_map. aborting"; exit 1)
-	if [[ ! -f "$dst" || "$RECOMPUTE" = true ]] ; then
-		echo "Phasing $src_prefix ..."
-		sbatch -o ${dst}.out -e ${dst}.err 50_phase.job
-	else
-	  echo "skipping, file exists: $dst"
-	fi
+	echo "Phasing $src_prefix ..."
+	sbatch -o ${dst_prefix}.out -e ${dst_prefix}.err 50_phase.job
 done
 

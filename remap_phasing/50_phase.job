@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=00:05:00
-#SBATCH --mem=600
+#SBATCH --time=05:05:00
+#SBATCH --mem=8G
 set -u
 set -e
 echo "Phasing $src_prefix ..."
@@ -9,8 +9,13 @@ srun shapeit --input-bed "$src_prefix" \
 	--input-map $genetic_map \
 	--output-max "${dst_prefix}.haps" "${dst_prefix}.sample" \
 	--output-log "${dst_prefix}.log"
+srun GenotypeHarmonizer.sh -i $dst_prefix -I SHAPEIT2 -o ${dst_prefix}.aligned -O SHAPEIT2 \
+  --update-id \
+  --update-reference-allele \
+  -r /groups/umcg-wijmenga/tmp04/resources/b37/variants/1000G_Phase3/ALL.chr${chr}.*.vcf.gz -R vcf
+
 srun shapeit -convert \
-	--input-haps "${dst_prefix}" \
-	--output-vcf "${dst_prefix}.vcf" \
-	--output-log "${dst_prefix}.vcf.log"
+	--input-haps "${dst_prefix}.aligned" \
+	--output-vcf "${dst_prefix}.aligned.vcf" \
+	--output-log "${dst_prefix}.aligned.vcf.log"
 
